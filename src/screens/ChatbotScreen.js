@@ -23,20 +23,27 @@ const handleSendMessage = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
       const response = await chat(token, chatId, message);
-      console.log(response)
-      const botResponse = {
-        id: nextId + 1,
-        isUser: false,
-        text: response.message.content,
-      };
-      setChatId(response.chat_id)
-      setChatHistory((prevChatHistory) => [...prevChatHistory, botResponse]); // Update chat history with chatbot's response
-      setNextId(nextId + 2); // Increment message ID counter
+      console.log(response);
+
+      // Filter out the user's message from the response
+      const botMessages = response.messages
+        .filter((msg) => msg.role === "assistant")
+        .map((msg, index) => ({
+          id: nextId + index + 1, // Increment message ID counter for each message
+          isUser: false,
+          text: msg.content,
+        }));
+
+      // Update chat history with chatbot's response
+      setChatId(response.chat_id);
+      setChatHistory((prevChatHistory) => [...prevChatHistory, ...botMessages]);
+      setNextId(nextId + botMessages.length); // Increment message ID counter
     } catch (e) {
       console.log(e);
     }
   }
 };
+
 
   return (
     <View style={{ flex: 1, padding: 20 }}>
@@ -51,7 +58,7 @@ const handleSendMessage = async () => {
             </Text>
           </View>
         )}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.text}
       />
       <View
         style={{
@@ -83,6 +90,7 @@ const handleSendMessage = async () => {
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   userMessage: {
